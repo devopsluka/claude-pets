@@ -1,0 +1,24 @@
+{
+ "session_id": "0fbd59fc-3dc2-4c2f-ada4-abe5526d8613",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-a/0fbd59fc-3dc2-4c2f-ada4-abe5526d8613.jsonl",
+ "cwd": "/home/user/projects/demo-a",
+ "prompt_id": "ae6e7778-c8b5-430c-9419-f4d8388122fe",
+ "permission_mode": "default",
+ "hook_event_name": "PostToolUse",
+ "tool_name": "Read",
+ "tool_input": {
+  "file_path": "/home/user/projects/demo-a/notes.txt"
+ },
+ "tool_response": {
+  "type": "text",
+  "file": {
+   "filePath": "/home/user/projects/demo-a/notes.txt",
+   "content": "remember the milk\n",
+   "numLines": 2,
+   "startLine": 1,
+   "totalLines": 2
+  }
+ },
+ "tool_use_id": "toolu_01T1RsRY3UcUntTELRuqgdfV",
+ "duration_ms": 3
+}

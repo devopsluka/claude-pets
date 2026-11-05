@@ -1,0 +1,39 @@
+{
+ "session_id": "0fbd59fc-3dc2-4c2f-ada4-abe5526d8613",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-a/0fbd59fc-3dc2-4c2f-ada4-abe5526d8613.jsonl",
+ "cwd": "/home/user/projects/demo-a",
+ "prompt_id": "ae6e7778-c8b5-430c-9419-f4d8388122fe",
+ "permission_mode": "default",
+ "hook_event_name": "PostToolUse",
+ "tool_name": "Edit",
+ "tool_input": {
+  "file_path": "/home/user/projects/demo-a/out.txt",
+  "old_string": "hi",
+  "new_string": "hello",
+  "replace_all": false
+ },
+ "tool_response": {
+  "filePath": "/home/user/projects/demo-a/out.txt",
+  "oldString": "hi",
+  "newString": "hello",
+  "originalFile": "hi",
+  "structuredPatch": [
+   {
+    "oldStart": 1,
+    "oldLines": 1,
+    "newStart": 1,
+    "newLines": 1,
+    "lines": [
+     "-hi",
+     "\\ No newline at end of file",
+     "+hello",
+     "\\ No newline at end of file"
+    ]
+   }
+  ],
+  "userModified": false,
+  "replaceAll": false
+ },
+ "tool_use_id": "toolu_01JhZZHei8tjcQxKvGEF9whU",
+ "duration_ms": 3
+}

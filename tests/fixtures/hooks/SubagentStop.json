@@ -1,0 +1,23 @@
+{
+ "session_id": "bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-b/bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb.jsonl",
+ "cwd": "/home/user/projects/demo-b",
+ "prompt_id": "ad4d83b7-6d23-457e-bfe6-4d8738aaeaa9",
+ "permission_mode": "default",
+ "agent_id": "a193093b46e5bbc6c",
+ "agent_type": "general-purpose",
+ "hook_event_name": "SubagentStop",
+ "stop_hook_active": false,
+ "agent_transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-b/bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb/subagents/agent-a193093b46e5bbc6c.jsonl",
+ "last_assistant_message": "The output of the bash command `echo sub` is:\n\n```\nsub\n```",
+ "background_tasks": [
+  {
+   "id": "a193093b46e5bbc6c",
+   "type": "subagent",
+   "status": "running",
+   "description": "Run echo sub command",
+   "agent_type": "general-purpose"
+  }
+ ],
+ "session_crons": []
+}

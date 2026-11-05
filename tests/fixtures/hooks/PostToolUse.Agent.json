@@ -1,0 +1,26 @@
+{
+ "session_id": "bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-b/bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb.jsonl",
+ "cwd": "/home/user/projects/demo-b",
+ "prompt_id": "ad4d83b7-6d23-457e-bfe6-4d8738aaeaa9",
+ "permission_mode": "default",
+ "hook_event_name": "PostToolUse",
+ "tool_name": "Agent",
+ "tool_input": {
+  "description": "Run echo sub command",
+  "prompt": "Run the bash command 'echo sub' and reply with its output.",
+  "subagent_type": "general-purpose"
+ },
+ "tool_response": {
+  "isAsync": true,
+  "status": "async_launched",
+  "agentId": "a193093b46e5bbc6c",
+  "description": "Run echo sub command",
+  "resolvedModel": "claude-haiku-4-5-20251001",
+  "prompt": "Run the bash command 'echo sub' and reply with its output.",
+  "outputFile": "/tmp/claude-scratch",
+  "canReadOutputFile": true
+ },
+ "tool_use_id": "toolu_01YYfwtzHhocncVmT8Cc9eN4",
+ "duration_ms": 13
+}

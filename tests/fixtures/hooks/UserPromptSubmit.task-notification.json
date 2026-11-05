@@ -1,0 +1,9 @@
+{
+ "session_id": "bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-b/bdc87ef2-0ef2-473b-aaf4-39f1175ffbdb.jsonl",
+ "cwd": "/home/user/projects/demo-b",
+ "prompt_id": "904f660a-308e-469a-a7eb-fde9d78c28e4",
+ "permission_mode": "default",
+ "hook_event_name": "UserPromptSubmit",
+ "prompt": "<task-notification>\n<task-id>a193093b46e5bbc6c</task-id>\n<tool-use-id>toolu_01YYfwtzHhocncVmT8Cc9eN4</tool-use-id>\n<output-file>/tmp/claude-scratch\n<status>completed</status>\n<summary>Agent \"Run echo sub command\" finished</summary>\n<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>\n<result>The output of the bash command `echo sub` is:\n\n```\nsub\n```</result>\n<usage><subagent_tokens>13360</subagent_tokens><tool_uses>1</tool_uses><duration_ms>3209</duration_ms></usage>\n</task-notification>"
+}

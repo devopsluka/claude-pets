@@ -1,0 +1,9 @@
+{
+ "session_id": "0fbd59fc-3dc2-4c2f-ada4-abe5526d8613",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-a/0fbd59fc-3dc2-4c2f-ada4-abe5526d8613.jsonl",
+ "cwd": "/home/user/projects/demo-a",
+ "prompt_id": "ae6e7778-c8b5-430c-9419-f4d8388122fe",
+ "permission_mode": "default",
+ "hook_event_name": "UserPromptSubmit",
+ "prompt": "Do exactly these steps in order using tools, one tool call per step, then reply with the single word done. 1) Read the file notes.txt with the Read tool. 2) Run the bash command: ls /definitely-not-here  3) Run the bash command: echo hello  4) Use the Write tool to create the file out.txt containing the text hi. 5) Use the Edit tool to change hi to hello in out.txt."
+}

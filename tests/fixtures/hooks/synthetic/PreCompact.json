@@ -1,0 +1,9 @@
+{
+ "session_id": "0fbd59fc-3dc2-4c2f-ada4-abe5526d8613",
+ "transcript_path": "/home/user/.claude/projects/-home-user-projects-demo-a/0fbd59fc-3dc2-4c2f-ada4-abe5526d8613.jsonl",
+ "cwd": "/home/user/projects/demo-a",
+ "permission_mode": "default",
+ "hook_event_name": "PreCompact",
+ "trigger": "auto",
+ "custom_instructions": null
+}
