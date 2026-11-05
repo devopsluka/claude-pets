@@ -563,8 +563,523 @@ class Tesla(Trait):
         return False
 
 
+def _hands_free(p):
+    return not (p.prop in HANDS_BUSY or p.hand_r is not None or p.arm_r > 1.2 or p.arm_fwd_r > 0.3 or p.item)
+
+
+def _species(pet):
+    return pet.design.species
+
+
+class Arnold(Trait):
+    legend = True
+    poke_label = "Make {name} flex"
+    idle = {"flex": 3, "curl": 4}
+    idle_time = {"flex": (2.2, 2.2), "curl": (4.0, 6.0)}
+    drop_idle = ("groom", "hum", "hop")
+    lively = frozenset({"curl"})
+    lines = {"hi": "Hello. I'm Arnold.", "bye": "I'll be back.", "alert": "Do it. Do it now!",
+             "streak": "Get to the choppa!", "done": "Hasta la vista, bugs."}
+    LIFT_KINDS = (A.RUNNING, A.TESTING, A.TOOL, A.DELEGATING)
+
+    def signature(self, pet, now):
+        pet.start_sig("flex", 2.0)
+        return True
+
+    def after_signal(self, pet, name, data, state):
+        if name == S.TESTS_PASSED:
+            pet.start_sig("flex", 1.6, text="PUMPED!")
+        elif name == S.TOOL_ERROR and int(data.get("streak") or 1) >= 3:
+            pet.say(self.lines["streak"], "error", emoji="🚁")
+        elif name == S.TURN_DONE and pet.bubble:
+            pet.say("%s  %s" % (self.lines["done"], pet.bubble.get("plain", "")), "success", ttl=6.0,
+                    emoji="💪", important=True)
+
+    def flex(self, pet, p, k, data):
+        """Double biceps: arms up, fists by the ears, everything tight."""
+        up = ease(min(1.0, k * 4.0)) * (1.0 if k < 0.85 else ease((1.0 - k) / 0.15))
+        p.hand_l = (-20.0 - 13.0 * up, -26.0 - 28.0 * up)
+        p.hand_r = (20.0 + 13.0 * up, -26.0 - 28.0 * up)
+        p.hand_pose = "flex" if up > 0.5 else ""
+        p.eye, p.mouth, p.brow = ("closed", "teeth", "angry") if up > 0.5 else ("open", "grin", "")
+        p.squash = -0.07 * up
+        p.bob = math.sin(pet.t * 30.0) * 0.4 * up
+        if up > 0.95 and not data.get("fx"):
+            data["fx"] = True
+            pet.fx.pop_text(data.get("text", "FLEX!"), y=-100.0)
+            pet.fx.sparkles(4, 0, -60, 36)
+
+    def curl(self, pet, p, t):
+        p.item, p.item_at = "dumbbell", "hand"
+        rep = abs(math.sin(t * 2.6))
+        p.hand_r = (19.0, -14.0 - 17.0 * rep)
+        p.hand_pose = "flex" if rep > 0.7 else ""
+        p.brow, p.mouth = "angry", ("teeth" if rep > 0.7 else "flat")
+        p.look = (0.6, 0.2)
+
+    def react(self, pet, p, name, k, data):
+        if name == "flex":
+            self.flex(pet, p, k, data)
+
+    def pose_idle(self, pet, p, name, t, k, dt):
+        if name == "flex":
+            self.flex(pet, p, k, pet.idle_data)
+            return True
+        if name == "curl":
+            self.curl(pet, p, t)
+            return True
+        return False
+
+    def decorate_work(self, pet, p, kind, t, dt):
+        if kind in self.LIFT_KINDS and _hands_free(p):
+            self.curl(pet, p, t)
+
+    def decorate_done(self, pet, p, t):
+        if pet.done_big and t < 2.4:
+            self.flex(pet, p, min(0.6, t / 2.4), pet.__dict__.setdefault("_done_flex", {}))
+
+    def visit(self, pet, friend):
+        if pet.rng.random() < 0.5:
+            pet.start_sig("flex", 1.8)
+            return True
+        return False
+
+
+class Trump(Trait):
+    legend = True
+    poke_label = "Ask {name} how it's going"
+    idle = {"rally": 4, "stance": 3}
+    idle_time = {"rally": (3.5, 5.5), "stance": (4.0, 7.0)}
+    drop_idle = ("groom", "hop", "hum")
+    lines = {"hi": "Tremendous to be here.", "bye": "Thank you. Thank you very much.",
+             "alert": "Many people are asking…", "streak": "Fake errors! Very unfair.",
+             "done": "Nobody's ever seen code like it."}
+
+    def signature(self, pet, now):
+        pet.start_sig("thumbs", 1.8)
+        return True
+
+    def after_signal(self, pet, name, data, state):
+        if name == S.TESTS_PASSED:
+            pet.start_sig("thumbs", 1.6, text="WINNING!")
+        elif name == S.COMMIT:
+            pet.start_sig("sign", 2.4)
+        elif name == S.TOOL_ERROR and int(data.get("streak") or 1) >= 3:
+            pet.say(self.lines["streak"], "error", emoji="📢")
+        elif name == S.TURN_DONE:
+            if pet.done_big:
+                pet.start_sig("sign", 2.4)
+            if pet.bubble:
+                pet.say("%s  %s" % (self.lines["done"], pet.bubble.get("plain", "")), "success", ttl=6.0,
+                        emoji="👍", important=True)
+
+    def react(self, pet, p, name, k, data):
+        if name == "thumbs":
+            up = ease(min(1.0, k * 5.0)) * (1.0 if k < 0.85 else ease((1.0 - k) / 0.15))
+            p.hand_l = (-18.0 - 6.0 * up, -22.0 - 16.0 * up)
+            p.hand_r = (18.0 + 6.0 * up, -22.0 - 16.0 * up)
+            p.hand_pose = "thumbs"
+            p.eye, p.mouth = ("squeeze", "o") if k < 0.35 else ("happy", "grin")
+            p.head_tilt = -0.05 * up
+            if up > 0.95 and not data.get("fx"):
+                data["fx"] = True
+                pet.fx.pop_text(data.get("text", "TREMENDOUS!"), y=-100.0)
+        elif name == "sign":
+            # sign it with the big pen, then hold the pen up for the cameras
+            p.item, p.item_at = "pen", "hand"
+            if k < 0.6:
+                p.hand_r = (8.0 + 5.0 * math.sin(k * 40.0), -18.0 + math.sin(k * 23.0) * 1.5)
+                p.look, p.head_dy = (0.3, 1.0), 4.0
+                p.mouth = "o"
+                p.mouth_open = 0.3
+            else:
+                up = ease((k - 0.6) / 0.15)
+                p.hand_r = (12.0 + 20.0 * up, -18.0 - 44.0 * up)
+                p.hand_l = (-22.0, -36.0)
+                p.hand_pose = "thumbs"
+                p.eye, p.mouth = "happy", "grin"
+                if up > 0.95 and not data.get("fx"):
+                    data["fx"] = True
+                    pet.fx.confetti(18)
+        elif name == "reach":
+            d = data.get("dir", 1.0)
+            pet.face_to = d * 0.9
+            out = math.sin(min(1.0, k / 0.6) * math.pi)
+            set_hand(p, d, (d * (16.0 + 18.0 * out), -24.0 - 2.0 * out))
+            if k < 0.45:
+                p.eye, p.mouth = "open", "smile"
+            else:
+                p.eye, p.mouth, p.brow = "open", "flat", "sad"
+                p.look = (d, 0.0)
+
+    def pose_idle(self, pet, p, name, t, k, dt):
+        if name == "rally":
+            side = 1.0 if math.sin(t * 0.8) >= 0 else -1.0
+            pet.face_to = side * 0.7
+            p.hand_pose = "point_r" if side > 0 else "point_l"
+            jab = abs(math.sin(t * 4.0))
+            set_hand(p, side, (side * (24.0 + 5.0 * jab), -32.0 + 2.0 * jab))
+            p.mouth = "o" if int(t * 5.0) % 2 else "flat"
+            p.mouth_open = 0.6
+            p.brow = "raised" if jab > 0.6 else ""
+            return True
+        if name == "stance":
+            p.hand_l, p.hand_r = (-26.0, -16.0), (26.0, -16.0)
+            p.head_tilt = -0.06
+            p.mouth, p.mouth_open = "o", 0.25
+            p.eye = "sleepy"
+            p.look = (math.sin(t * 0.5) * 0.6, -0.2)
+            return True
+        return False
+
+    def visit(self, pet, friend):
+        d = 1.0 if friend.x > pet.x else -1.0
+        if _species(friend) == "melania":
+            pet.start_sig("reach", 1.8, dir=d)
+            friend.start_sig("brush_off", 1.8, dir=-d)
+            return True
+        if pet.rng.random() < 0.5:
+            pet.start_sig("thumbs", 1.6)
+            return True
+        return False
+
+
+class Melania(Trait):
+    legend = True
+    poke_label = "Try to get {name}'s attention"
+    idle = {"poise": 5, "strut": 2}
+    idle_time = {"poise": (5.0, 9.0), "strut": (5.0, 7.0)}
+    drop_idle = ("groom", "hop", "hum", "stretch")
+    lines = {"hi": "Hello.", "bye": "Goodbye.", "alert": "Waiting. Your OK?", "streak": "…",
+             "done": "Fine."}
+
+    def signature(self, pet, now):
+        again = now - getattr(pet, "last_poke", -99.0) < 6.0
+        pet.last_poke = now
+        pet.start_sig("side_eye" if again else "brush_off", 1.8, dir=pet.prop_side)
+        return True
+
+    def after_signal(self, pet, name, data, state):
+        if name == S.TESTS_PASSED or (name == S.TURN_DONE and pet.done_big):
+            pet.start_sig("clap", 1.6)
+        if name == S.TURN_DONE and pet.bubble:
+            pet.say("%s  %s" % (self.lines["done"], pet.bubble.get("plain", "")), "success", ttl=5.5,
+                    emoji="🎩", important=True)
+        elif name == S.TOOL_ERROR and int(data.get("streak") or 1) >= 2:
+            pet.start_sig("stare", 1.8)
+            pet.say("…", "error", ttl=2.2)
+
+    def react(self, pet, p, name, k, data):
+        d = data.get("dir", 1.0)
+        if name == "brush_off":
+            # turn away, flick the hand, touch up the hat brim
+            pet.face_to = -d * 0.9
+            p.head_tilt = 0.08 * d
+            p.eye, p.mouth, p.brow = "closed", "flat", "raised"
+            if k < 0.35:
+                flick = math.sin(k / 0.35 * math.pi)
+                set_hand(p, d, (d * (18.0 + 12.0 * flick), -28.0 - 6.0 * flick))
+            else:
+                lift = math.sin(min(1.0, (k - 0.35) / 0.55) * math.pi)
+                set_hand(p, -d, (-d * (22.0 + 9.0 * lift), -30.0 - 22.0 * lift))
+        elif name == "side_eye":
+            pet.face_to = -d * 0.3
+            p.look = (d, 0.1)
+            p.eye, p.mouth, p.brow = "sleepy", "flat", "raised"
+            p.head_tilt = -0.05 * d
+            if not data.get("fx"):
+                data["fx"] = True
+                pet.say("…", "say", ttl=1.6)
+        elif name == "clap":
+            pet.face_to = 0.0
+            gap = abs(math.sin(pet.t * 12.0)) * 2.5
+            p.hand_l, p.hand_r = (-2.5 - gap, -27.0), (2.5 + gap, -27.0)
+            p.eye, p.mouth = "sleepy", "smile"
+        elif name == "stare":
+            pet.face_to = 0.0
+            p.look = (0.0, 0.0)
+            p.eye, p.mouth, p.brow = "open", "flat", ""
+            p.bob = 0.0
+
+    def pose_idle(self, pet, p, name, t, k, dt):
+        if name == "poise":
+            p.head_tilt = -0.06
+            p.eye, p.mouth = "sleepy", "flat"
+            p.look = (math.sin(t * 0.3) * 0.7, -0.1)
+            p.hand_l, p.hand_r = (-8.0, -14.0), (8.0, -14.0)
+            p.bob = 0.0
+            return True
+        if name == "strut":
+            span = 50.0 * pet.world.scale
+            leg = int(t / 3.0) % 2
+            target = pet.world.clamp_x(pet.home_x + (span if leg == 0 else -span))
+            pet._walk(p, dt, target, 18.0)
+            p.head_tilt = -0.07
+            p.eye, p.mouth = "sleepy", "flat"
+            return True
+        return False
+
+    def visit(self, pet, friend):
+        d = 1.0 if friend.x > pet.x else -1.0
+        if _species(friend) == "trump":
+            friend.start_sig("reach", 1.8, dir=-d)
+            pet.start_sig("brush_off", 1.8, dir=d)
+            return True
+        pet.start_sig("side_eye", 1.8, dir=d)
+        return True
+
+
+class Miku(Trait):
+    legend = True
+    poke_label = "Hand {name} a leek"
+    idle = {"groove": 5, "leek": 2}
+    idle_time = {"groove": (4.0, 7.0), "leek": (2.4, 2.4)}
+    drop_idle = ("groom",)
+    lively = frozenset({"groove", "leek"})
+    lines = {"hi": "Miku desu! ♪", "bye": "Mata ne~ ♪", "alert": "Ne, ne~ I need your OK!",
+             "streak": "Mou~! Again?!", "done": "Yatta! ♪"}
+
+    def signature(self, pet, now):
+        pet.start_sig("leek", 2.4)
+        return True
+
+    def after_signal(self, pet, name, data, state):
+        if name == S.TESTS_PASSED:
+            pet.start_sig("sing", 2.2)
+        elif name == S.TOOL_ERROR and int(data.get("streak") or 1) >= 2:
+            pet.start_sig("pout", 1.6)
+            if int(data.get("streak") or 1) >= 3:
+                pet.say(self.lines["streak"], "error", emoji="💢")
+        elif name == S.TURN_DONE:
+            pet.start_sig("sing", 2.2)
+            if pet.bubble:
+                pet.say("%s  %s" % (self.lines["done"], pet.bubble.get("plain", "")), "success", ttl=6.0,
+                        emoji="🎵", important=True)
+
+    def leek(self, pet, p, k, data):
+        p.item, p.item_at = "leek", "hand"
+        p.item_glow = pet.t * 14.0                     # spinning
+        a = pet.t * 9.0
+        p.hand_r = (30.0 + math.cos(a) * 4.0, -38.0 + math.sin(a) * 4.0)
+        p.eye, p.mouth = "happy", "grin"
+        p.bob = -abs(math.sin(pet.t * 9.0)) * 1.5
+        self._notes(pet, data, 0.25)
+
+    def _notes(self, pet, data, every):
+        step = int(pet.t / every)
+        if data.get("note") != step:
+            data["note"] = step
+            pet.fx.note(pet.rng.uniform(-24, 24), -84.0)
+
+    def react(self, pet, p, name, k, data):
+        if name == "leek":
+            self.leek(pet, p, k, data)
+        elif name == "sing":
+            sway = math.sin(pet.t * 7.0)
+            p.lean = sway * 0.07
+            p.tail = sway
+            p.bob = -abs(math.sin(pet.t * 7.0)) * 2.0
+            p.hand_l = (-14.0, -30.0 + sway * 2.0)
+            p.hand_r = (24.0 - abs(sway) * 2.0, -46.0)
+            p.mouth = "o" if int(pet.t * 4.0) % 2 else "grin"
+            p.eye = "happy"
+            self._notes(pet, data, 0.3)
+        elif name == "pout":
+            p.blush, p.mouth, p.brow, p.eye = 1.0, "flat", "angry", "squeeze"
+            p.ear = -1.0                                # twin tails droop
+            p.hand_l, p.hand_r = (-10.0, -22.0), (10.0, -22.0)
+            if not data.get("fx"):
+                data["fx"] = True
+                pet.fx.sweat(1.0)
+
+    def pose_idle(self, pet, p, name, t, k, dt):
+        if name == "groove":
+            beat = math.sin(t * 3.4)
+            p.lean = beat * 0.06
+            p.tail = beat
+            p.head_tilt = beat * 0.08
+            p.bob = -abs(math.sin(t * 6.8)) * 1.2
+            p.arm_l, p.arm_r = 0.6 + beat * 0.4, 0.6 - beat * 0.4
+            p.eye = "happy" if int(t * 0.8) % 3 == 0 else "open"
+            p.mouth = "grin"
+            pet.emit_t -= dt
+            if pet.emit_t <= 0:
+                pet.emit_t = 0.8
+                pet.fx.note()
+            return True
+        if name == "leek":
+            self.leek(pet, p, k, pet.idle_data)
+            return True
+        return False
+
+
+class Freddie(Trait):
+    legend = True
+    poke_label = "Get {name} to sing"
+    idle = {"strut": 4, "pose": 3}
+    idle_time = {"strut": (4.0, 6.0), "pose": (2.5, 3.5)}
+    drop_idle = ("groom", "hop", "hum")
+    lines = {"hi": "Hello, darlings!", "bye": "Goodbye, everybody!", "alert": "Under pressure — need your OK",
+             "streak": "Another one bites the dust…", "done": "We are the champions!"}
+    SHOW_KINDS = (A.RUNNING, A.TESTING, A.DELEGATING)
+
+    def signature(self, pet, now):
+        pet.start_sig("ayo", 1.8)
+        return True
+
+    def after_signal(self, pet, name, data, state):
+        if name == S.TESTS_PASSED:
+            pet.start_sig("champion", 2.0)
+        elif name == S.TOOL_ERROR and int(data.get("streak") or 1) >= 3:
+            pet.say(self.lines["streak"], "error", emoji="🎤")
+        elif name == S.TURN_DONE:
+            if pet.done_big:
+                pet.start_sig("champion", 2.4)
+            if pet.bubble:
+                pet.say("%s  %s" % (self.lines["done"], pet.bubble.get("plain", "")), "success", ttl=6.0,
+                        emoji="👑", important=True)
+
+    def react(self, pet, p, name, k, data):
+        p.item, p.item_at = "mic", "hand"
+        if name == "ayo":
+            if k < 0.45:
+                p.hand_r = (14.0, -34.0)
+                p.item_glow = -0.35
+                p.mouth, p.mouth_open, p.eye = "o", 1.0, "closed"
+                p.head_tilt = -0.1
+                if not data.get("fx"):
+                    data["fx"] = True
+                    pet.fx.pop_text("AY-OH!", y=-100.0)
+                    pet.fx.note(10, -86)
+            else:
+                pump = abs(math.sin((k - 0.45) * 18.0))
+                p.hand_l = (-28.0, -60.0 - 16.0 * pump)
+                p.hand_r = (18.0, -24.0)
+                p.item_glow = 0.3
+                p.eye, p.mouth = "happy", "grin"
+        elif name == "champion":
+            up = ease(min(1.0, k * 4.0))
+            p.hand_r = (14.0 + 16.0 * up, -26.0 - 52.0 * up)
+            p.item_glow = -0.25 * up
+            p.hand_l = (-22.0, -30.0 - 10.0 * up)
+            p.eye, p.mouth = "happy", "grin"
+            p.lean = -0.05 * up
+            if up > 0.95 and not data.get("fx"):
+                data["fx"] = True
+                pet.fx.sparkles(6, 22, -90, 26)
+
+    def decorate_work(self, pet, p, kind, t, dt):
+        if kind in self.SHOW_KINDS and t > 6.0 and _hands_free(p):
+            side = pet.prop_side
+            pet.face_to = side * 0.7
+            p.item, p.item_at, p.item_glow = "mic", "hand", 1.1
+            p.hand_r = (22.0, -38.0)
+            p.hand_l = (-15.0, -12.0)                  # fist on the hip
+            p.mouth = "o"
+            p.mouth_open = 0.5 + 0.5 * math.sin(t * 6.0)
+
+    def decorate(self, pet, p, dt):
+        if pet.asleep or p.held or p.item or not _hands_free(p):
+            return
+        p.item, p.item_at, p.item_glow = "mic", "hand", 0.35
+
+    def pose_idle(self, pet, p, name, t, k, dt):
+        if name == "strut":
+            span = 46.0 * pet.world.scale
+            leg = int(t / 2.4) % 2
+            target = pet.world.clamp_x(pet.home_x + (span if leg == 0 else -span))
+            pet._walk(p, dt, target, 30.0)
+            p.item, p.item_at = "mic", "hand"
+            p.item_glow = 0.35 + math.sin(t * 6.0) * 0.25
+            p.head_tilt = -0.06
+            p.mouth = "grin"
+            return True
+        if name == "pose":
+            p.hand_l = (-31.0, -80.0)
+            p.hand_r = (16.0, -18.0)
+            p.item, p.item_at, p.item_glow = "mic", "hand", 0.6
+            p.lean = -0.08
+            p.eye, p.mouth = "closed", "o"
+            return True
+        return False
+
+
+class Dolly(Trait):
+    legend = True
+    poke_label = "Say hi to {name}"
+    idle = {"strum": 4, "nails": 2, "sparkle": 1}
+    idle_time = {"strum": (4.0, 6.0), "nails": (3.0, 4.0), "sparkle": (1.6, 1.6)}
+    drop_idle = ("groom", "hop")
+    lively = frozenset({"strum", "nails"})
+    lines = {"hi": "Hey there, honey!", "bye": "Bye now, sugar!", "alert": "Need your OK, darlin'",
+             "streak": "Well, bless its heart…", "done": "Done, honey — easy as pie!", "busy": "Workin' 9 to 5 ♪"}
+
+    def signature(self, pet, now):
+        pet.start_sig("wink", 1.6)
+        return True
+
+    def after_signal(self, pet, name, data, state):
+        now = pet.world.now
+        if name == S.TESTS_PASSED:
+            pet.start_sig("wink", 1.4)
+        elif name == S.TOOL_START and now - getattr(pet, "last_busy", -999.0) > 300.0:
+            pet.last_busy = now
+            pet.say(self.lines["busy"], "say", ttl=3.0, emoji="💅")
+        elif name == S.TOOL_ERROR and int(data.get("streak") or 1) >= 3:
+            pet.say(self.lines["streak"], "error", emoji="🙏")
+        elif name == S.TURN_DONE:
+            pet.start_sig("strum", 2.6)
+            if pet.bubble:
+                pet.say("%s  %s" % (self.lines["done"], pet.bubble.get("plain", "")), "success", ttl=6.0,
+                        emoji="🎸", important=True)
+
+    def strum(self, pet, p, t, data):
+        p.item, p.item_at = "guitar", "hand"
+        hx, hy = 9.0, -21.0 + math.sin(t * 16.0) * 2.0
+        p.hand_r = (hx, hy)
+        p.hand_l = (hx - 17.0, -35.0)
+        p.eye, p.mouth = "happy", "grin"
+        p.head_tilt = math.sin(t * 2.0) * 0.06
+        step = int(t / 0.5)
+        if data.get("note") != step:
+            data["note"] = step
+            pet.fx.note(pet.rng.uniform(-20, 20), -84.0)
+
+    def react(self, pet, p, name, k, data):
+        if name == "wink":
+            p.eye, p.mouth = "wink", "grin"
+            p.head_tilt = 0.1
+            p.hand_r = (20.0, -40.0 + math.sin(pet.t * 10.0) * 2.0)
+            if not data.get("fx"):
+                data["fx"] = True
+                pet.fx.sparkles(7, 0, -66, 36)
+                pet.say("Hey there, honey!", "say", ttl=2.0, emoji="💖")
+        elif name == "strum":
+            self.strum(pet, p, pet.t, data)
+
+    def pose_idle(self, pet, p, name, t, k, dt):
+        if name == "strum":
+            self.strum(pet, p, t, pet.idle_data)
+            return True
+        if name == "nails":
+            tap = math.sin(t * 14.0)
+            p.hand_l, p.hand_r = (-7.0, -19.0 + abs(tap) * 1.5), (7.0, -19.0 + abs(-tap) * 1.5)
+            p.look = (0.0, 1.0)
+            p.mouth = "smile"
+            return True
+        if name == "sparkle":
+            p.eye, p.mouth = "sparkle", "grin"
+            if not pet.idle_data.get("fx"):
+                pet.idle_data["fx"] = True
+                pet.fx.sparkles(8, 0, -70, 40)
+            return True
+        return False
+
+
 PLAIN = Trait()
-TRAITS = {"tyson": Tyson(), "snoop": Snoop(), "pablo": Pablo(), "einstein": Einstein(), "tesla": Tesla()}
+TRAITS = {"tyson": Tyson(), "snoop": Snoop(), "pablo": Pablo(), "einstein": Einstein(), "tesla": Tesla(),
+          "arnold": Arnold(), "trump": Trump(), "melania": Melania(), "miku": Miku(), "freddie": Freddie(),
+          "dolly": Dolly()}
 
 
 def trait_for(species):

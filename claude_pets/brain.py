@@ -10,6 +10,7 @@ import random
 import zlib
 
 from . import legends
+from . import voice as voice_mod
 from .model import Activity as A
 from .model import Emotion as E
 from .model import Signal as S
@@ -69,6 +70,7 @@ IDLE_WEIGHTS = {
 PERSONALITY_BIAS = {
     "playful": dict(hop=2, visit=2, walk=1), "calm": dict(sit=2, stand=1), "curious": dict(look=3, walk=2),
     "sleepy": dict(yawn=2, sit=2), "brave": dict(walk=2, hop=1), "shy": dict(sit=1, look=1, visit=-1),
+    "snarky": dict(look=2, stand=1, visit=-1, hop=-2),
 }
 MAX_MINIS = 4
 SLEEP_LOOP = math.tau / 1.3     # seconds; matches the renderer's slow idle motions
@@ -243,10 +245,14 @@ class Pet:
     def cfg(self, key, default=None):
         return self.world.config.get(key, default)
 
-    def say(self, text, style="say", ttl=3.2, sticky=False, important=False, emoji=""):
+    def say(self, text, style="say", ttl=3.2, sticky=False, important=False, emoji="", voice="", **fields):
+        """Show a speech bubble. ``voice`` names the line so a personality with its own
+        voice (see ``voice.py``) can word it differently; ``fields`` fill its blanks."""
         mode = self.cfg("bubbles", "all")
         if mode == "off" or (mode == "important" and not important):
             return
+        if voice:
+            text = voice_mod.line(self.profile.personality, voice, self.rng, text, **fields)
         plain = text
         if emoji and self.cfg("emoji", True):
             text = "%s %s" % (emoji, text)
@@ -283,7 +289,7 @@ class Pet:
                 source = data.get("source", "")
                 if source == "clear":
                     self.fx.sparkles(6)
-                    self.say("Fresh start!", "info", emoji="✨")
+                    self.say("Fresh start!", "info", emoji="✨", voice="fresh")
                 elif source in ("startup", "resume"):
                     prof.bump("sessions")
                     self.dirty_profile = True
@@ -292,10 +298,12 @@ class Pet:
                 if sentiment == "praise":
                     self.start_react("love", 1.8)
                     self.fx.hearts(4)
-                    self.say(self.rng.choice(("Aww, thanks!", "Yay!", "Happy to help!")), "success", emoji="💛")
+                    self.say(self.rng.choice(("Aww, thanks!", "Yay!", "Happy to help!")), "success", emoji="💛",
+                             voice="praise")
                 elif sentiment == "frustrated":
                     self.start_react("sheepish", 1.8)
-                    self.say(self.rng.choice(("On it…", "Let me fix that.", "Sorry! Looking…")), "say", emoji="💦")
+                    self.say(self.rng.choice(("On it…", "Let me fix that.", "Sorry! Looking…")), "say", emoji="💦",
+                             voice="frustrated")
                 else:
                     self.start_react("perk", 0.55)
             elif name == S.TOOL_START:
@@ -308,31 +316,31 @@ class Pet:
                 if streak in (10, 25, 50, 100):
                     self.start_react("hop", 0.5)
                     self.fx.sparkles(4)
-                    self.say("On a roll ×%d" % streak, "success", emoji="🔥")
+                    self.say("On a roll ×%d" % streak, "success", emoji="🔥", voice="streak_ok", n=streak)
             elif name == S.TOOL_ERROR:
                 streak = int(data.get("streak") or 1)
                 self.start_react("flinch", 0.7)
                 self.fx.cross()
                 if streak >= 3:
                     self.fx.steam()
-                    self.say("%d failures in a row…" % streak, "error", emoji="😤")
+                    self.say("%d failures in a row…" % streak, "error", emoji="😤", voice="streak_err", n=streak)
             elif name == S.TESTS_PASSED:
                 self.start_react("cheer", 1.2)
                 self.fx.check()
                 self.fx.sparkles(5)
-                self.say("Tests passed!", "success", emoji="✅", important=True)
+                self.say("Tests passed!", "success", emoji="✅", important=True, voice="tests_passed")
                 self._xp(5)
             elif name == S.TESTS_FAILED:
-                self.say("Tests failed", "error", emoji="❌", important=True)
+                self.say("Tests failed", "error", emoji="❌", important=True, voice="tests_failed")
             elif name == S.COMMIT:
                 self.start_react("cheer", 1.2)
                 self.fx.check()
-                self.say("Committed!", "success", emoji="📦", important=True)
+                self.say("Committed!", "success", emoji="📦", important=True, voice="commit")
                 self._xp(5)
             elif name == S.NEEDS_USER:
                 reason = data.get("reason", "")
                 if reason == "idle":
-                    self.say("Your turn!", "info", ttl=6.0, emoji="👋", important=True)
+                    self.say("Your turn!", "info", ttl=6.0, emoji="👋", important=True, voice="your_turn")
                 else:
                     self.start_react("startle", 0.5)
                     self._alert_bubble(state)
@@ -341,34 +349,35 @@ class Pet:
                 self.start_react("hop", 0.45)
             elif name == S.PERMISSION_DENIED:
                 self.start_react("sheepish", 1.6)
-                self.say("Okay, not that.", "say", emoji="🙈")
+                self.say("Okay, not that.", "say", emoji="🙈", voice="denied")
             elif name == S.TURN_DONE:
                 self._turn_done(state, data)
             elif name == S.TURN_FAILED:
                 self.hush()
                 self.start_react("dizzy", 1.6)
                 error = str(data.get("error") or "API error").replace("_", " ")
-                self.say("Ouch — %s" % error, "error", ttl=8.0, emoji="🤒", important=True)
+                self.say("Ouch — %s" % error, "error", ttl=8.0, emoji="🤒", important=True, voice="turn_failed",
+                         error=error)
             elif name == S.INTERRUPTED:
                 self.hush()
                 self.start_react("startle", 0.5)
-                self.say("Oh! Stopping.", "say", emoji="✋")
+                self.say("Oh! Stopping.", "say", emoji="✋", voice="interrupted")
             elif name == S.SUBAGENT_START:
                 count = int(data.get("count") or 1)
                 self.fx.sparkles(3)
                 self.say("Calling in helpers ×%d" % count if count > 1 else "Calling in a helper", "say",
-                         emoji="👷")
+                         emoji="👷", voice="helpers" if count > 1 else "helper", n=count)
             elif name == S.COMPACT_START:
-                self.say("Squeezing my memory…", "info", ttl=6.0, emoji="🗜️", important=True)
+                self.say("Squeezing my memory…", "info", ttl=6.0, emoji="🗜️", important=True, voice="compact")
             elif name == S.COMPACT_DONE:
                 self.fx.sparkles(5)
-                self.say("Much lighter!", "success", emoji="✨")
+                self.say("Much lighter!", "success", emoji="✨", voice="compact_done")
             elif name == S.TASK_COMPLETED:
                 self.fx.check()
             elif name == S.CONTEXT_HIGH:
                 pct = data.get("pct") or state.context_pct or 0.8
                 self.say("Getting full… %d%% context" % round(pct * 100), "alert", ttl=6.0, emoji="🍙",
-                         important=True)
+                         important=True, voice="context_high", pct=round(pct * 100))
             elif name == S.SESSION_END:
                 self.leave()
             self.trait.after_signal(self, name, data, state)
@@ -387,17 +396,27 @@ class Pet:
         text = state.detail
         if not text:
             return
+        now = self.world.now
+        if (voice_mod.has_voice(self.profile.personality) and now - self.last_aside > voice_mod.ASIDE_EVERY
+                and self.rng.random() < voice_mod.ASIDE_CHANCE):
+            self.last_aside = now
+            self.say(text, "say", ttl=4.2, emoji=EMOJI.get(state.activity, ""), voice="aside", detail=text)
+            return
         self.say(text, "say", ttl=3.6, emoji=EMOJI.get(state.activity, ""))
+
+    last_aside = -999.0
 
     def _alert_bubble(self, state):
         reason = state.needs_reason
         if reason == "question":
-            self.say("I have a question for you", "alert", sticky=True, emoji="❓", important=True)
+            self.say("I have a question for you", "alert", sticky=True, emoji="❓", important=True, voice="question")
         elif reason == "elicitation":
-            self.say("I need your input", "alert", sticky=True, emoji="❓", important=True)
+            self.say("I need your input", "alert", sticky=True, emoji="❓", important=True, voice="input")
         else:
             detail = state.needs_detail or state.detail
-            text = self.trait.line("alert", "Need your OK") + (" · %s" % detail if detail else "")
+            ask = self.trait.line("alert", "") or voice_mod.line(self.profile.personality, "permission", self.rng,
+                                                                 "Need your OK")
+            text = ask + (" · %s" % detail if detail else "")
             self.say(text, "alert", sticky=True, emoji="✋", important=True)
 
     def _turn_done(self, state, data):
@@ -407,7 +426,8 @@ class Pet:
         errors = int(data.get("errors") or 0)
         self.profile.bump("turns")
         self._xp(10 if not errors else 5)
-        parts = ["Done"]
+        opener = voice_mod.line(self.profile.personality, "done_errors" if errors else "done", self.rng, "Done")
+        parts = [opener]
         if duration >= 5:
             parts.append(fmt_duration(duration))
         if tools:

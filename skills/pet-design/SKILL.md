@@ -26,9 +26,10 @@ targets the pet of the current session by default.
      Colours are hex; choose a belly noticeably lighter than the fur, and an
      accent that contrasts with both.
   3. `claude-pets design --show` prints the current look if you need to check.
-- **A legend** ("make him Mike Tyson / Snoop / Pablo / Einstein / Tesla") →
+- **A legend** ("make him Mike Tyson / Snoop / Pablo / Einstein / Tesla /
+  Arnold / Trump / Melania / Miku / Freddie / Dolly") →
   `claude-pets design --set species=tyson` (or `snoop`, `pablo`, `einstein`,
-  `tesla`). Legends are human characters, not pets: they take their own name
+  `tesla`, `arnold`, `trump`, `melania`, `miku`, `freddie`, `dolly`). Legends are human characters, not pets: they take their own name
   unless one was set by hand, their colour fields mean outfit (`fur`), skin
   (`belly`), hair (`extra`) and signature colour (`accent`), and poking them
   triggers their signature move instead of petting.

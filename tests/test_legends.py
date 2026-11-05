@@ -17,7 +17,9 @@ from claude_pets.render.creature import (ALL_SPECIES, COATS, LEGEND_NAMES, LEGEN
 from claude_pets.store import NAMES, Store, apply_changes
 
 CFG = dict(config_mod.DEFAULTS)
-MOVES = {"tyson": "punch", "snoop": "toke", "pablo": "line", "einstein": "eureka", "tesla": "lightning"}
+MOVES = {"tyson": "punch", "snoop": "toke", "pablo": "line", "einstein": "eureka", "tesla": "lightning",
+         "arnold": "flex", "trump": "thumbs", "melania": "brush_off", "miku": "leek", "freddie": "ayo",
+         "dolly": "wink"}
 
 
 def state(activity, emotion=E.CONTENT, now=1000.0, **kw):
@@ -219,6 +221,48 @@ class SignatureTests(LegendCase):
         self.assertIn("Fo shizzle", snoop.bubble["text"])
         self.assertIn("Done", snoop.bubble["text"])
 
+    def test_melania_brushes_off_donald(self):
+        donald = self.pet("trump", x=900)
+        melania = self.pet("melania", x=990)
+        self.assertTrue(donald.trait.visit(donald, melania))
+        self.assertEqual(donald.react[3]["name"], "reach")
+        self.assertEqual(melania.react[3]["name"], "brush_off")
+        self.assertEqual(donald.react[3]["dir"], -melania.react[3]["dir"])   # he reaches, she turns away
+        self.run_for(2.5)
+        self.assertIsNone(donald.react)
+        self.assertIsNone(melania.react)
+        self.assertTrue(melania.trait.visit(melania, donald))
+        self.assertEqual(melania.react[3]["name"], "brush_off")
+
+    def test_poking_melania_twice_gets_the_side_eye(self):
+        melania = self.pet("melania", x=900)
+        melania.petted(self.now)
+        self.assertEqual(melania.react[3]["name"], "brush_off")
+        self.run_for(2.2)
+        melania.petted(self.now)
+        self.assertEqual(melania.react[3]["name"], "side_eye")
+        self.run_for(8.0)
+        melania.petted(self.now)
+        self.assertEqual(melania.react[3]["name"], "brush_off")             # she has forgotten you again
+
+    def test_new_legends_react_to_the_session(self):
+        expected = {"arnold": "flex", "trump": "thumbs", "melania": "clap", "miku": "sing", "freddie": "champion",
+                    "dolly": "wink"}
+        for i, (name, move) in enumerate(expected.items()):
+            pet = self.pet(name, x=200 + 250 * i)
+            pet.on_session(state(A.TESTING, now=self.now), [(S.TESTS_PASSED, {"detail": "ok"})])
+            self.assertEqual(pet.react[3]["name"], move, name)
+            self.run_for(3.0)
+        arnold = self.pet("arnold", x=1700)
+        arnold.on_session(state(A.RUNNING, now=self.now, detail="Building"), [(S.TOOL_START, {"detail": "Building"})])
+        self.run_for(1.0)
+        self.assertEqual(arnold.pose.item, "dumbbell")
+        arnold.on_session(state(A.THINKING, E.FRUSTRATED, self.now), [(S.TOOL_ERROR, {"tool": "Bash", "streak": 3})])
+        self.assertIn("choppa", arnold.bubble["text"])
+        freddie = self.pet("freddie", x=1850)
+        self.run_for(0.2)
+        self.assertEqual(freddie.pose.item, "mic")
+
     def test_legends_survive_every_state_and_signal(self):
         from claude_pets.render import scene
         from claude_pets.render.tokens import Theme
@@ -254,8 +298,56 @@ class SignatureTests(LegendCase):
             self.world.pets.remove(pet)
 
 
+class VoiceTests(LegendCase):
+    def test_snarky_pets_reword_but_keep_the_facts(self):
+        from claude_pets import voice
+
+        cat = self.pet("cat", x=400)
+        apply_changes(cat.profile, {"personality": "snarky"})
+        cat.on_session(state(A.THINKING, now=self.now), [(S.TOOL_ERROR, {"tool": "Bash", "streak": 4})])
+        self.assertIn(cat.bubble["plain"], [line.format(n=4) for line in voice.SNARKY["streak_err"]])
+        cat.on_session(state(A.TESTING, now=self.now), [(S.TESTS_PASSED, {})])
+        self.assertIn(cat.bubble["plain"], voice.SNARKY["tests_passed"])
+        cat.on_session(state(A.DONE, now=self.now), [(S.TURN_DONE, {"duration": 90, "tools": 4, "errors": 0})])
+        opener, *facts = cat.bubble["plain"].split(" · ")
+        self.assertIn(opener, voice.SNARKY["done"])
+        self.assertEqual(facts[-1], "4 tools")
+        cat.on_session(state(A.WAITING, now=self.now, needs_user=True, needs_reason="permission",
+                             needs_detail="Bash: rm -rf build", needs_since=self.now),
+                       [(S.NEEDS_USER, {"reason": "permission"})])
+        self.assertTrue(cat.bubble["plain"].endswith("Bash: rm -rf build"))     # the request itself stays readable
+
+    def test_ordinary_pets_keep_their_cheer(self):
+        dog = self.pet("dog", x=600)
+        apply_changes(dog.profile, {"personality": "playful"})
+        dog.on_session(state(A.TESTING, now=self.now), [(S.TESTS_PASSED, {})])
+        self.assertEqual(dog.bubble["plain"], "Tests passed!")
+
+    def test_melania_comes_snarky_and_nobody_hatches_that_way(self):
+        from claude_pets.store import HATCH_PERSONALITIES
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(tmp)
+            mine = store.get("/work/m")
+            apply_changes(mine, {"personality": "calm"})
+            apply_changes(mine, {"species": "melania"})
+            self.assertEqual(mine.personality, "snarky")
+            nice = store.get("/work/n")
+            apply_changes(nice, {"species": "melania", "personality": "shy"})
+            self.assertEqual(nice.personality, "shy")                          # asked for explicitly
+            self.assertNotIn("snarky", HATCH_PERSONALITIES)
+            legends = Store(tmp, cast="legends")
+            for i in range(60):
+                prof = legends.fresh("/work/p-%d" % i)
+                expected = "snarky" if prof.design.species == "melania" else None
+                if expected:
+                    self.assertEqual(prof.personality, expected)
+                else:
+                    self.assertIn(prof.personality, HATCH_PERSONALITIES)
+
+
 class DemoCastTests(unittest.TestCase):
-    def test_legends_demo_brings_all_five_and_ends_by_itself(self):
+    def test_legends_demo_brings_everyone_and_ends_by_itself(self):
         from claude_pets.demo import Demo
         from claude_pets.tracker import SessionTracker
 

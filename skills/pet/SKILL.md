@@ -31,8 +31,8 @@ User's request: $ARGUMENTS
 | hide / show | `claude-pets hide [minutes]` (default 60) · `claude-pets show` |
 | treat | `claude-pets treat` |
 | poke it (pets an animal; a legend does its signature move) | `claude-pets poke [pet]` |
-| turn it into a legend — "make him Mike Tyson" | `claude-pets design --set species=tyson` (also `snoop`, `pablo`, `einstein`, `tesla`) |
-| see all five legends in action | `claude-pets demo legends --for 120` |
+| turn it into a legend — "make him Mike Tyson" | `claude-pets design --set species=tyson` (also `snoop`, `pablo`, `einstein`, `tesla`, `arnold`, `trump`, `melania`, `miku`, `freddie`, `dolly`) |
+| see all the legends in action | `claude-pets demo legends --for 120` |
 | make it say something | `claude-pets say <text>` |
 | jump to a pet's terminal | `claude-pets focus [pet]` |
 | settings | `claude-pets config` (list) · `claude-pets config <key> <value>` |

@@ -26,8 +26,9 @@ Inspired by the OpenAI Codex pet, with a few things it does not do:
 - **Click a pet to jump to its terminal** — even on Wayland, where apps
   normally cannot raise each other's windows.
 - **Legends**: not every identity is a pet. Mike Tyson, Snoop Dogg, Pablo
-  Escobar, Albert Einstein and Nikola Tesla can take a session too, and they
-  do not get petted — they do their thing instead (see below).
+  Escobar, Albert Einstein, Nikola Tesla, Arnold Schwarzenegger, Donald and
+  Melania Trump, Hatsune Miku, Freddie Mercury and Dolly Parton can take a
+  session too, and they do not get petted — they do their thing instead (see below).
 - Drag, toss, pet and treat them; hover for a status card with a context meter.
 
 ## Install
@@ -93,9 +94,16 @@ signature move — it replaces petting, and it also fires at fitting moments:
 | **Pablo Escobar** | does a line off a little mirror and comes up wired | sometimes powers up that way when you send a prompt; "Plata o plomo?" on permission prompts; stares into the distance when you keep him waiting; makes it rain cash after a big turn |
 | **Albert Einstein** | gets an idea (lightbulb) | thinks at a chalkboard; the bulb lights when thinking turns into doing; tongue out when done |
 | **Nikola Tesla** | throws lightning (neighbours get a jolt) | runs commands on a Tesla coil; a failing command electrocutes him; lights a bulb wirelessly when done; pigeons like him |
+| **Arnold Schwarzenegger** | double-biceps flex | curls a dumbbell while commands run; flexes when tests pass; "Get to the choppa!" on an error streak; "I'll be back." when the session ends |
+| **Donald Trump** | double thumbs-up ("TREMENDOUS!") | points at the crowd when idle; signs a commit (or a big turn) with a giant pen; "Fake errors!" on an error streak |
+| **Melania Trump** | turns away and touches up her hat — poke again and you get the side-eye | a tiny golf clap when tests pass; a flat stare and "…" at errors; brushes off Donald whenever he comes near |
+| **Hatsune Miku** | spins her leek, notes flying | sings when tests pass or a turn ends; pouts (twin tails droop) at errors; grooves when idle |
+| **Freddie Mercury** | "Ay-oh!" and a fist pump | never without his half mic stand; strikes a pose with it on long runs; raises it like a sceptre when tests pass |
+| **Dolly Parton** | winks — sparkles and "Hey there, honey!" | "Workin' 9 to 5" when the work starts; strums a guitar when a turn ends; admires her nails when idle |
 
 Turn any pet into one with `claude-pets design --set species=tyson` (also
-`snoop`, `pablo`, `einstein`, `tesla`), in the studio under **Who**, or with
+`snoop`, `pablo`, `einstein`, `tesla`, `arnold`, `trump`, `melania`, `miku`,
+`freddie`, `dolly`), in the studio under **Who**, or with
 `/pet design make him Snoop`. `claude-pets config cast legends` makes every
 *new* project hatch a legend (`animals` = never, `mixed` = either, the
 default); pets you already have keep their identity. `claude-pets demo legends`
@@ -169,7 +177,7 @@ Claude Code session ──hooks──▶ bin/claude-pets-hook ──unix socket�
   of 16 emotions.
 - **Brain** (`brain.py`): picks the behaviour and produces a pose every frame.
 - **Renderer** (`render/`): pets are drawn procedurally with Cairo from parts
-  on one shared rig — 12 species, 5 human legends (`render/human.py`, with
+  on one shared rig — 12 species, 11 human legends (`render/human.py`, with
   their behaviour in `legends.py`), 6 coat patterns, 11 accessories, any
   colours — so every pet is fully re-designable and there are no image assets.
 - **Overlay** (`overlay.py`): each pet is a small transparent, click-through,

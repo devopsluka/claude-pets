@@ -72,7 +72,7 @@ class Pose:
     head_dy: float = 0.0
     head_tilt: float = 0.0
     look: tuple = (0.0, 0.0)     # gaze, -1..1 each
-    eye: str = "open"            # open happy closed wide sparkle heart spiral x squeeze sleepy angry sad
+    eye: str = "open"            # open happy closed wide sparkle heart spiral x squeeze sleepy angry sad wink
     eye_open: float = 1.0        # blink: 1 open .. 0 shut
     mouth: str = "smile"         # smile cat grin o flat frown wavy tongue teeth yawn none
     mouth_open: float = 1.0
@@ -99,9 +99,10 @@ class Pose:
     cache_key: tuple = None      # set when this exact picture recurs (looping poses)
     hand_l: tuple = None         # explicit hand position (pet units) overriding the arm angle
     hand_r: tuple = None
-    item: str = ""               # small signature item: joint bulb bills pigeon
+    item: str = ""               # small signature item: joint bulb bills pigeon dumbbell pen leek mic guitar
     item_at: str = "hand"        # hand | hand_l | mouth | over
-    item_glow: float = 0.0       # ember / bulb brightness, 0..1
+    item_glow: float = 0.0       # ember / bulb brightness, 0..1 (leek / mic: rotation, radians)
+    hand_pose: str = ""          # legends: thumbs flex point_l point_r
     flash: float = 0.0           # white flash over the silhouette (electrocution), 0..1
     shock: bool = False          # hair standing on end
 
@@ -156,15 +157,44 @@ SPECIES.update({
     "tesla": dict(label="Nikola Tesla", human=True, hair="slick", facial="thin", outfit="suit", brow_w=1.9,
                   ears="none", tail="none", nose="human", mouth="smile", head=(26.5, 25.5, 0.60, 0.66),
                   body=(17.5, 16.5, 0.58, 0.68), eye_y=2.0, eye_dx=11.0, eye_scale=0.9, patterns=("plain",)),
+    "arnold": dict(label="Arnold Schwarzenegger", human=True, hair="flattop", facial="cleft", outfit="jacket",
+                   arm_w=9.5, brow_w=3.0, ears="none", tail="none", nose="human", mouth="smile",
+                   head=(27.5, 25.5, 0.82, 0.84), body=(23.0, 17.5, 0.70, 0.72), eye_y=2.5, eye_dx=11.0,
+                   eye_scale=0.85, patterns=("plain",)),
+    "trump": dict(label="Donald Trump", human=True, hair="combover", facial="none", outfit="tie", brow_w=2.2,
+                  ears="none", tail="none", nose="human", mouth="smile", head=(28.5, 25.5, 0.62, 0.78),
+                  body=(21.5, 18.0, 0.60, 0.74), eye_y=3.0, eye_dx=11.0, eye_scale=0.8, patterns=("plain",)),
+    "melania": dict(label="Melania Trump", human=True, hair="long", facial="none", outfit="skirtsuit", hat="brim",
+                    personality="snarky",
+                    lashes=True, lips="#B0414E", brow_w=1.7, shoes="#D9C3AE", ears="none", tail="none",
+                    nose="human", mouth="smile", head=(25.0, 25.5, 0.60, 0.66), body=(16.5, 16.0, 0.80, 0.66),
+                    eye_y=3.0, eye_dx=10.5, eye_scale=0.85, patterns=("plain",)),
+    "miku": dict(label="Hatsune Miku", human=True, hair="twintails", facial="none", outfit="miku", headset=True,
+                 lashes=True, anime=True, sleeves="#2A2630", eye_color="#1E9C93", brow_w=1.5, ears="none",
+                 tail="none", nose="human", mouth="smile", head=(29.0, 25.5, 0.62, 0.70),
+                 body=(16.0, 15.5, 0.56, 0.68), eye_y=4.5, eye_dx=11.5, eye_scale=1.3, patterns=("plain",)),
+    "freddie": dict(label="Freddie Mercury", human=True, hair="slick", facial="mustache", outfit="military",
+                    brow_w=2.6, shoes="#F4F4F6", ears="none", tail="none", nose="human", mouth="smile",
+                    head=(26.5, 25.0, 0.62, 0.74), body=(18.5, 17.0, 0.58, 0.70), eye_y=2.0, eye_dx=11.0,
+                    eye_scale=0.9, patterns=("plain",)),
+    "dolly": dict(label="Dolly Parton", human=True, hair="bouffant", facial="none", outfit="sequins", lashes=True,
+                  lips="#E0245E", nails=True, brow_w=1.7, shoes="#E64A8E", ears="none", tail="none", nose="human",
+                  mouth="smile", head=(26.0, 25.0, 0.60, 0.70), body=(17.5, 16.5, 0.56, 0.70), eye_y=3.0,
+                  eye_dx=10.5, eye_scale=0.9, patterns=("plain",)),
 })
 SPECIES_ORDER = ("cat", "dog", "fox", "bunny", "bear", "panda", "penguin", "frog", "axolotl",
                  "dragon", "robot", "ghost")
-LEGENDS = ("tyson", "snoop", "pablo", "einstein", "tesla")
+LEGENDS = ("tyson", "snoop", "pablo", "einstein", "tesla", "arnold", "trump", "melania", "miku", "freddie", "dolly")
 ALL_SPECIES = SPECIES_ORDER + LEGENDS
-LEGEND_NAMES = {"tyson": "Mike", "snoop": "Snoop", "pablo": "Pablo", "einstein": "Albert", "tesla": "Nikola"}
-#: the colour of each legend's signature: gloves, chain, shirt print, bulb, lightning
+LEGEND_NAMES = {"tyson": "Mike", "snoop": "Snoop", "pablo": "Pablo", "einstein": "Albert", "tesla": "Nikola",
+                "arnold": "Arnold", "trump": "Donald", "melania": "Melania", "miku": "Miku", "freddie": "Freddie",
+                "dolly": "Dolly"}
+#: the colour of each legend's signature: gloves, chain, shirt print, bulb, lightning, dumbbell plates, tie,
+#: hat band, Miku's tie and headset, Freddie's jacket, Dolly's nails and waistband
 SIGNATURE_ACCENT = {"tyson": "#E0282E", "snoop": "#FBBF24", "pablo": "#3B82F6", "einstein": "#FBBF24",
-                    "tesla": "#7DD3FC"}
+                    "tesla": "#7DD3FC", "arnold": "#E0282E", "trump": "#C8102E", "melania": "#1E2A4A",
+                    "miku": "#39C5BB", "freddie": "#F5C518", "dolly": "#FF5FA2"}
+DEFAULT_EYE = "#2A2238"
 
 PATTERNS = ("plain", "tabby", "spots", "socks", "patch", "tuxedo")
 ACCESSORIES = ("none", "bowtie", "scarf", "glasses", "crown", "beanie", "flower", "headphones",
@@ -199,6 +229,18 @@ COATS = {
     "pablo": (("#F3F1EA", "#E0A67A", "#2B211C"), ("#F7B8C4", "#E0A67A", "#2B211C"), ("#9CC9EE", "#E0A67A", "#2B211C")),
     "einstein": (("#8A6A4F", "#F1C9A5", "#EDEDF2"), ("#6F7C8A", "#F1C9A5", "#EDEDF2"), ("#7A8F5A", "#F1C9A5", "#EDEDF2")),
     "tesla": (("#2E3440", "#F3D6BE", "#221B18"), ("#3A2F5B", "#F3D6BE", "#221B18"), ("#4A3B2F", "#F3D6BE", "#221B18")),
+    # leather jacket, gym grey, camo
+    "arnold": (("#2B2A30", "#D9A27A", "#4A3424"), ("#7C8592", "#D9A27A", "#4A3424"), ("#5B6B3A", "#D9A27A", "#4A3424")),
+    # navy suit, black suit, golf white
+    "trump": (("#1F2A44", "#F2A766", "#F2D16B"), ("#2A2A30", "#F2A766", "#F2D16B"), ("#F4F4F6", "#F2A766", "#F2D16B")),
+    # white suit + hat, military green, black
+    "melania": (("#F4F1EA", "#EDC9A8", "#5A3B2A"), ("#5F6B3A", "#EDC9A8", "#5A3B2A"), ("#24212A", "#EDC9A8", "#5A3B2A")),
+    # classic, snow, sakura
+    "miku": (("#C9CDD3", "#FDE6D8", "#39C5BB"), ("#EEF4FB", "#FDE6D8", "#CFE3F7"), ("#F3DCE6", "#FDE6D8", "#F59AC0")),
+    # yellow jacket, all white, red leather
+    "freddie": (("#F5C518", "#D9A27A", "#1E1A1A"), ("#F4F4F6", "#D9A27A", "#1E1A1A"), ("#B91C1C", "#D9A27A", "#1E1A1A")),
+    # pink rhinestones, white & silver, denim
+    "dolly": (("#FF7EB6", "#F6CFB4", "#FFF1B8"), ("#E9ECF2", "#F6CFB4", "#FFF1B8"), ("#4A78C2", "#F6CFB4", "#FFF1B8")),
 }
 
 ACCENTS = ("#8B5CF6", "#F97316", "#4ADE80", "#38BDF8", "#FB7185", "#FBBF24")
@@ -220,7 +262,10 @@ class _Skin:
         self.belly = rgb(design.belly)
         self.accent = rgb(design.accent)
         self.extra = rgb(design.extra) if design.extra else darken(self.fur, 0.3)
-        self.eye = rgb(design.eye)
+        eye = design.eye
+        if spec.get("eye_color") and eye.lower() == DEFAULT_EYE.lower():
+            eye = spec["eye_color"]
+        self.eye = rgb(eye)
         self.cheek = rgb(design.cheek)
         self.line = outline_of(self.fur)
         self.shade = darken(self.fur, 0.16)
@@ -245,6 +290,9 @@ class _Skin:
                 self.limb, self.limb_line = self.skin, self.skin_line
             else:
                 self.limb, self.limb_line = self.fur, self.line
+            if spec.get("sleeves"):
+                self.limb = rgb(spec["sleeves"])
+                self.limb_line = outline_of(self.limb)
             self.shoe = rgb(spec.get("shoes", "#2A2630"))
 
 
@@ -645,7 +693,7 @@ class _Painter:
             ex, ey = target
         self.hands[side] = (ex, ey)
         if self.human:
-            tube(cr, ((sx, sy), (ex, ey)), 7.0, k.limb, k.limb_line)
+            tube(cr, ((sx, sy), (ex, ey)), self.spec.get("arm_w", 7.0), k.limb, k.limb_line)
             _human.hand(self, side, sx, sy, ex, ey)
             return
         if self.spec.get("flippers"):
@@ -707,6 +755,8 @@ class _Painter:
                 paint(cr, rgb("#1F2433"), k.line, lw=1.8)
             self.face(f)
         self.head_accessory(f)
+        if self.human:
+            _human.headwear(self, f)
         if p.hat and p.hat != "headphones":
             self.hat(p.hat)
         if not self.flat:
@@ -887,6 +937,8 @@ class _Painter:
                     near = max(0.0, side * f)
                     scale = self.eye_scale * (1.45 if (p.prop == "magnifier" and side == 1) else 1.0)
                     self.eye(side * self.eye_dx + f * 5.5, ey, side, scale, 1 - 0.2 * near)
+                if spec.get("lashes") or spec.get("anime"):
+                    _human.eye_details(self, f)
             self.brows(f, ey)
             if p.blush > 0.02:
                 for side in (-1, 1):
@@ -895,6 +947,8 @@ class _Painter:
             nx = f * 8.0
             _human.nose(self, nx, ey + 6.2)
             self.mouth(nx, ey + 10.8)
+            if spec.get("lips"):
+                _human.lips(self, nx, ey + 10.8)
             _human.facial_hair(self, nx, ey + 10.8)
             return
         for side in (-1, 1):
@@ -949,6 +1003,8 @@ class _Painter:
     def eye(self, cx, cy, side, scale, narrow):
         cr, p, k = self.cr, self.p, self.k
         kind = p.eye
+        if kind == "wink":
+            kind = "happy" if side == 1 else "open"
         col = k.extra if self.led else k.eye
         rx, ry = 4.4 * scale * narrow, 5.9 * scale
         lx = p.look[0] * 1.5

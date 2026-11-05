@@ -26,7 +26,9 @@ NAMES = (
     "Bao", "Clover", "Nugget", "Poppy", "Rune", "Sesame", "Tater", "Udon", "Wasabi", "Zest", "Ember",
     "Fern", "Gizmo", "Hazel", "Indy",
 )
-PERSONALITIES = ("playful", "calm", "curious", "sleepy", "brave", "shy")
+PERSONALITIES = ("playful", "calm", "curious", "sleepy", "brave", "shy", "snarky")
+#: what a new pet can hatch with; the rest are only chosen on purpose
+HATCH_PERSONALITIES = ("playful", "calm", "curious", "sleepy", "brave", "shy")
 #: who can hatch for a new project: the animals, the legends, or anyone
 CASTS = ("animals", "legends", "mixed")
 
@@ -143,6 +145,8 @@ def apply_changes(profile, changes, rng=None):
                 design["fur"], design["belly"], design["extra"] = COATS[value][0]
             if value != design["species"] and "accent" not in changes and value in SIGNATURE_ACCENT:
                 design["accent"] = SIGNATURE_ACCENT[value]
+            if value != design["species"] and "personality" not in changes and SPECIES[value].get("personality"):
+                profile.personality = SPECIES[value]["personality"]   # a legend comes with their attitude
             design["species"] = value
             changed.append(key)
         elif key == "coat":
@@ -246,7 +250,8 @@ class Store:
         design = default_design(seed, self.cast)
         return Profile(
             key=key, cwd=cwd, index=index, name=name_for(design.species, seed),
-            personality=PERSONALITIES[d[2] % len(PERSONALITIES)],
+            personality=SPECIES[design.species].get("personality")
+            or HATCH_PERSONALITIES[d[2] % len(HATCH_PERSONALITIES)],
             design=design,
             stats={"born": time.time(), "xp": 0, "sessions": 0, "turns": 0, "tools": 0, "pets": 0, "treats": 0},
         )
