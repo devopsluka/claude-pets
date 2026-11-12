@@ -124,8 +124,8 @@ class App:
         self.card = CardWindow(self)
         screen = Gdk.Screen.get_default()
         if screen is not None:
-            screen.connect("monitors-changed", self._on_monitors)
-            screen.connect("size-changed", self._on_monitors)
+            screen.connect("monitors-changed", self._on_monitors_changed)
+            screen.connect("size-changed", self._on_monitors_changed)
 
     # ------------------------------------------------------------------
     # desktop environment
@@ -137,6 +137,44 @@ class App:
         geo, work = monitor.get_geometry(), monitor.get_workarea()
         floor = work.y + work.height - 6 - int(self.cfg.get("floor_offset", 0))
         return geo.x, work.y, geo.x + geo.width, floor
+
+    REBUILD_DELAY_MS = 1500
+    _rebuild_timer = 0
+
+    def _on_monitors_changed(self, *_args):
+        """A screen was plugged, unplugged or rearranged. Re-measure now; once the layout has
+        settled, rebuild every window. Under XWayland, override-redirect windows that lived through
+        a monitor change can be left as black boxes that no longer take the pointer."""
+        self._on_monitors()
+        if self._rebuild_timer:
+            self.GLib.source_remove(self._rebuild_timer)
+        self._rebuild_timer = self.GLib.timeout_add(self.REBUILD_DELAY_MS, self._rebuild_after_change)
+
+    def _rebuild_after_change(self):
+        self._rebuild_timer = 0
+        try:
+            self._on_monitors()
+            self.rebuild_windows()
+            log.info("monitors changed: rebuilt %d window(s)", len(self.actors))
+        except Exception:
+            log.exception("window rebuild failed")
+        return False
+
+    def rebuild_windows(self):
+        """Throw away every desktop window and make fresh ones."""
+        from .overlay import CardWindow, PetWindow
+        self.card.hide()
+        self.card.destroy()
+        self.card = CardWindow(self)
+        show = self.visible()
+        for actor in self.actors.values():
+            if actor.pet.held:                  # a drag cut short: drop the pet
+                actor.pet.release(0.0, 0.0)
+            actor.window.destroy()
+            actor.window = PetWindow(self, actor.pet)
+            if show and not actor.hidden:
+                actor.window.show()
+            actor.acc = 1.0
 
     def _on_monitors(self, *_args):
         try:
@@ -613,7 +651,6 @@ class App:
         self.reload_config()
 
     def reload_config(self):
-        from .overlay import PetWindow
         old_scale = self.world.scale
         self.cfg = config_mod.load()
         self.store.cast = self.cfg.get("cast", "mixed")
@@ -622,12 +659,7 @@ class App:
         self.theme = self.Theme(self._scheme())
         self._on_monitors()
         if abs(old_scale - self.world.scale) > 1e-6:
-            show = self.visible()
-            for actor in self.actors.values():
-                actor.window.destroy()
-                actor.window = PetWindow(self, actor.pet)
-                if show and not actor.hidden:
-                    actor.window.show()
+            self.rebuild_windows()
         self._wake_all()
 
     # ------------------------------------------------------------------

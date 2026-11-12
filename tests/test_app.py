@@ -55,6 +55,25 @@ class AppTests(unittest.TestCase):
         payload.update(extra)
         self.app.tracker.feed_hook({"type": "hook", "v": 1, "ts": time.time(), "meta": {}, "payload": payload})
 
+    def test_monitor_change_rebuilds_every_window(self):
+        self.hook("SessionStart", source="startup")
+        self.hook("SessionStart", sid="s2", source="startup")
+        before = {sid: actor.window for sid, actor in self.app.actors.items()}
+        card = self.app.card
+        held = self.app.actors["s1"].pet
+        held.grab(500, 500)                    # a drag in progress when the screen goes away
+        for _ in range(3):                     # unplugging fires several signals in a row
+            self.app._on_monitors_changed()
+        self.assertTrue(self.app._rebuild_timer)
+        self.assertIs(self.app.actors["s1"].window, before["s1"])   # nothing yet: waits to settle
+        self.assertFalse(self.app._rebuild_after_change())
+        for sid, actor in self.app.actors.items():
+            self.assertIsNot(actor.window, before[sid])
+            self.assertIs(actor.window.pet, actor.pet)
+        self.assertIsNot(self.app.card, card)
+        self.assertFalse(held.held)
+        self.assertEqual(self.app._rebuild_timer, 0)
+
     def test_sessions_become_pets_and_leave_again(self):
         self.hook("SessionStart", source="startup")
         self.hook("SessionStart", sid="s2", source="startup")          # same project: a sibling
